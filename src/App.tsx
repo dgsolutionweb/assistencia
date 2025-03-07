@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { CssBaseline, ThemeProvider, createTheme, responsiveFontSizes } from '@mui/material';
 import { OrdemServicoProvider } from './contexts/OrdemServicoContext';
 import { SnackbarProvider } from 'notistack';
@@ -177,13 +177,11 @@ function App() {
         autoHideDuration={4000}
       >
         <OrdemServicoProvider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/novo" element={<NovoDispositivo />} />
-              <Route path="/checklist/:id" element={<Checklist />} />
-            </Routes>
-          </Router>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/novo" element={<NovoDispositivo />} />
+            <Route path="/checklist/:id" element={<Checklist />} />
+          </Routes>
         </OrdemServicoProvider>
       </SnackbarProvider>
     </ThemeProvider>
