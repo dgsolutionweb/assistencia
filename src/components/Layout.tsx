@@ -8,7 +8,8 @@ import {
   User, 
   LogOut,
   Menu,
-  X
+  X,
+  Package
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Novo Serviço', href: '/servicos/novo', icon: Plus },
   { name: 'Serviços', href: '/servicos', icon: List },
+  { name: 'Peças', href: '/pecas', icon: Package },
   { name: 'Relatórios', href: '/relatorios', icon: BarChart3 },
   { name: 'Perfil', href: '/perfil', icon: User },
 ]

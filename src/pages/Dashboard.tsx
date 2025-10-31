@@ -42,7 +42,7 @@ export function Dashboard() {
       const { data: servicos, error } = await supabase
         .from('servicos')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('usuario_id', user.id)
 
       if (error) throw error
 

@@ -11,6 +11,7 @@
     "check": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
     "@supabase/supabase-js": "^2.39.3",
     "clsx": "^2.1.1",

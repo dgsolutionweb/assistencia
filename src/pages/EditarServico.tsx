@@ -57,7 +57,7 @@ export function EditarServico() {
         .from('servicos')
         .select('*')
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('usuario_id', user.id)
         .single()
 
       if (error) throw error
@@ -90,11 +90,13 @@ export function EditarServico() {
       const { error } = await supabase
         .from('servicos')
         .update({
-          ...data,
-          updated_at: new Date().toISOString(),
+          nome_aparelho: data.nome_aparelho,
+          valor_total: data.valor_total,
+          custo_peca: data.custo_peca,
+          observacoes: data.observacoes || null,
         })
-        .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('id', id!)
+        .eq('usuario_id', user.id)
 
       if (error) throw error
 

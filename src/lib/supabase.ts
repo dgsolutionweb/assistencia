@@ -16,7 +16,23 @@ export interface Servico {
   valor_total: number
   custo_peca: number
   lucro: number
+  peca_id?: string | null
+  pecas_ids?: string | null // JSON string com array de peças
   observacoes?: string
+  created_at: string
+  updated_at: string
+  usuario_id: string
+}
+
+export interface Peca {
+  id: string
+  nome: string
+  preco_custo: number
+  frete: number
+  fornecedor?: string
+  imagem_url?: string
+  observacoes?: string
+  ativo: boolean
   created_at: string
   updated_at: string
   user_id: string
@@ -38,9 +54,47 @@ export interface Database {
   public: {
     Tables: {
       servicos: {
-        Row: Servico
-        Insert: Omit<Servico, 'id' | 'lucro' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<Servico, 'id' | 'lucro' | 'created_at' | 'updated_at'>>
+        Row: {
+          id: string
+          usuario_id: string
+          nome_aparelho: string
+          valor_total: number
+          custo_peca: number
+          peca_id: string | null
+          pecas_ids: string | null
+          observacoes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          usuario_id: string
+          nome_aparelho: string
+          valor_total: number
+          custo_peca: number
+          peca_id?: string | null
+          pecas_ids?: string | null
+          observacoes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          usuario_id?: string
+          nome_aparelho?: string
+          valor_total?: number
+          custo_peca?: number
+          peca_id?: string | null
+          pecas_ids?: string | null
+          observacoes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      pecas: {
+        Row: Peca
+        Insert: Omit<Peca, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Peca, 'id' | 'created_at' | 'updated_at'>>
       }
     }
   }

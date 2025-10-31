@@ -7,6 +7,8 @@ import { Dashboard } from '@/pages/Dashboard'
 import { NovoServico } from '@/pages/NovoServico'
 import { Servicos } from '@/pages/Servicos'
 import { EditarServico } from '@/pages/EditarServico'
+import Pecas from '@/pages/Pecas'
+import NovaPeca from '@/pages/NovaPeca'
 import { Relatorios } from '@/pages/Relatorios'
 import { Perfil } from '@/pages/Perfil'
 import { useAuth } from '@/hooks/useAuth'
@@ -63,6 +65,26 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <EditarServico />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/pecas"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Pecas />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/pecas/nova"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <NovaPeca />
                 </Layout>
               </ProtectedRoute>
             }

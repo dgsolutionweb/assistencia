@@ -32,28 +32,31 @@ graph TD
 
 ## 2. Technology Description
 
-- Frontend: Next.js@14 + React@18 + TypeScript + Tailwind CSS@3 + React Hook Form + Zod
-- Backend: Supabase (PostgreSQL + Auth + Real-time)
-- Deployment: Vercel (Frontend) + Supabase Cloud
+* Frontend: Next.js\@14 + React\@18 + TypeScript + Tailwind CSS\@3 + React Hook Form + Zod
+
+* Backend: Supabase (PostgreSQL + Auth + Real-time)
+
+* Deployment: Vercel (Frontend) + Supabase Cloud
 
 ## 3. Route definitions
 
-| Route | Purpose |
-|-------|---------|
-| / | Página inicial - redireciona para /login ou /dashboard conforme autenticação |
-| /login | Página de login e autenticação de usuários |
-| /dashboard | Dashboard principal com resumo financeiro e navegação |
-| /servicos/novo | Formulário para cadastro de novos serviços |
-| /servicos | Lista completa de serviços com filtros e paginação |
-| /servicos/[id] | Página de edição de serviço específico |
-| /relatorios | Página de relatórios e estatísticas financeiras |
-| /perfil | Configurações do perfil do usuário |
+| Route           | Purpose                                                                      |
+| --------------- | ---------------------------------------------------------------------------- |
+| /               | Página inicial - redireciona para /login ou /dashboard conforme autenticação |
+| /login          | Página de login e autenticação de usuários                                   |
+| /dashboard      | Dashboard principal com resumo financeiro e navegação                        |
+| /servicos/novo  | Formulário para cadastro de novos serviços                                   |
+| /servicos       | Lista completa de serviços com filtros e paginação                           |
+| /servicos/\[id] | Página de edição de serviço específico                                       |
+| /relatorios     | Página de relatórios e estatísticas financeiras                              |
+| /perfil         | Configurações do perfil do usuário                                           |
 
 ## 4. API definitions
 
 ### 4.1 Core API
 
 **Autenticação (Supabase Auth)**
+
 ```typescript
 // Login
 supabase.auth.signInWithPassword({
@@ -69,6 +72,7 @@ supabase.auth.resetPasswordForEmail(email: string)
 ```
 
 **Serviços CRUD**
+
 ```typescript
 // Criar serviço
 supabase.from('servicos').insert({
@@ -99,6 +103,7 @@ supabase.from('servicos')
 ```
 
 **Tipos TypeScript**
+
 ```typescript
 interface Servico {
   id: string;
@@ -185,6 +190,7 @@ erDiagram
 ### 6.2 Data Definition Language
 
 **Tabela de Serviços (servicos)**
+
 ```sql
 -- Criar tabela de serviços
 CREATE TABLE servicos (
@@ -244,6 +250,7 @@ WHERE auth.uid() IS NOT NULL;
 ```
 
 **Configurações de Permissões Supabase**
+
 ```sql
 -- Garantir acesso básico para usuários anônimos (apenas para auth)
 GRANT USAGE ON SCHEMA public TO anon;
@@ -252,3 +259,4 @@ GRANT USAGE ON SCHEMA public TO anon;
 GRANT ALL PRIVILEGES ON TABLE servicos TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 ```
+
