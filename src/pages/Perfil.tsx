@@ -19,9 +19,9 @@ import {
   Key,
   AlertTriangle
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { LoadingSpinner } from '@/components/Loading'
 import { useAuth } from '@/hooks/useAuth'
 import { useMobile } from '@/hooks/useMobile'
