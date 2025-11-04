@@ -59,16 +59,19 @@ export function useVoiceSearch({
   continuous = false
 }: UseVoiceSearchOptions) {
   const [isListening, setIsListening] = useState(false)
-  const [isSupported, setIsSupported] = useState(false)
   const [transcript, setTranscript] = useState('')
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
-  // Check for browser support
+  // Detecta suporte ao SpeechRecognition sem causar re-render em loop
+  const isSupported = !!(
+    typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+  )
+
+  // Checa suporte (sem setState)
   const checkSupport = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    const supported = !!SpeechRecognition
-    setIsSupported(supported)
-    return supported
+    return !!(
+      typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+    )
   }, [])
 
   // Initialize speech recognition
@@ -144,7 +147,7 @@ export function useVoiceSearch({
 
   return {
     isListening,
-    isSupported: checkSupport(),
+    isSupported,
     transcript,
     startListening,
     stopListening,
