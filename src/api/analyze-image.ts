@@ -1,4 +1,4 @@
-import { analyzePartImage } from '@/lib/gemini'
+import { analisarImagemPeca } from '@/lib/gemini'
 
 export async function POST(request: Request) {
   try {
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     // Analisar imagem com Gemini
-    const result = await analyzePartImage(file)
+    const result = await analisarImagemPeca(file)
 
     return new Response(
       JSON.stringify(result),

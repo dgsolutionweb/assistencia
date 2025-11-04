@@ -6,6 +6,18 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   build: {
     sourcemap: 'hidden',
+    target: 'es2015',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['framer-motion', '@headlessui/react'],
+          utils: ['date-fns', 'clsx', 'tailwind-merge'],
+          supabase: ['@supabase/supabase-js'],
+          router: ['react-router-dom']
+        }
+      }
+    }
   },
   plugins: [
     react({
@@ -15,6 +27,6 @@ export default defineConfig({
         ],
       },
     }),
-    tsconfigPaths()
+    tsconfigPaths(),
   ],
 })

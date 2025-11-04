@@ -20,68 +20,106 @@ export interface ResultadoAnalise {
 
 export async function analisarImagemPeca(imageFile: File): Promise<PecaExtraida> {
   try {
+    // Validar imagem antes de processar
+    const validacao = validarImagemPeca(imageFile);
+    if (!validacao.valido) {
+      throw new Error(validacao.erro || 'Imagem inválida');
+    }
+
     // Converter arquivo para base64
     const imageBase64 = await fileToBase64(imageFile);
     
-    // Usar o modelo Gemini 2.5 Flash
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    // Usar o modelo Gemini 2.0 Flash com configurações otimizadas
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash-exp",
+      generationConfig: {
+        temperature: 0.1,
+        topK: 1,
+        topP: 0.8,
+        maxOutputTokens: 1024,
+      },
+    });
     
     const prompt = `
-    Analise esta imagem de uma nota fiscal ou comprovante de compra e extraia as seguintes informações sobre a peça/produto:
+    Analise esta imagem de uma nota fiscal, comprovante de compra ou produto e extraia as seguintes informações:
 
-    1. Nome da peça/produto (seja específico e técnico)
-    2. Preço de custo unitário (valor numérico apenas)
+    1. Nome da peça/produto (seja específico e técnico, incluindo modelo/código se visível)
+    2. Preço de custo unitário (valor numérico apenas, sem símbolos de moeda)
     3. Valor do frete (se houver, caso contrário 0)
-    4. Nome do fornecedor (se visível)
+    4. Nome do fornecedor/loja (se visível)
+    5. Quantidade (se especificada, caso contrário 1)
 
-    IMPORTANTE: 
+    REGRAS IMPORTANTES: 
     - Retorne APENAS um JSON válido no formato exato abaixo
     - Use números decimais para preços (ex: 15.50, não R$ 15,50)
+    - Converta vírgulas em pontos para decimais
     - Se não conseguir identificar algum campo, use valores padrão apropriados
-    - Para frete, se não houver informação, use 0
+    - Para frete, se não houver informação clara, use 0
     - Para fornecedor, se não houver, use "Não identificado"
+    - Para quantidade, se não especificada, use 1
+    - Seja preciso na identificação do nome da peça
 
     Formato de resposta (JSON apenas):
     {
       "nome": "nome_da_peca",
       "preco_custo": 0.00,
       "frete": 0.00,
-      "fornecedor": "nome_do_fornecedor"
-    }
-    `;
+      "fornecedor": "nome_do_fornecedor",
+      "quantidade": 1
+    }`;
 
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: imageBase64,
-          mimeType: imageFile.type
+    // Tentar análise com retry em caso de falha
+    let tentativas = 0;
+    const maxTentativas = 3;
+    
+    while (tentativas < maxTentativas) {
+      try {
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: imageBase64,
+              mimeType: imageFile.type
+            }
+          }
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
+        
+        // Extrair JSON da resposta
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('Resposta não contém JSON válido');
         }
+
+        const dadosExtraidos = JSON.parse(jsonMatch[0]) as PecaExtraida;
+        
+        // Validar dados extraídos
+        if (!dadosExtraidos.nome || typeof dadosExtraidos.preco_custo !== 'number') {
+          throw new Error('Dados extraídos são inválidos');
+        }
+
+        return {
+          nome: dadosExtraidos.nome.trim(),
+          preco_custo: Number(dadosExtraidos.preco_custo) || 0,
+          frete: Number(dadosExtraidos.frete) || 0,
+          fornecedor: dadosExtraidos.fornecedor || 'Não identificado',
+          quantidade: Number(dadosExtraidos.quantidade) || 1
+        };
+
+      } catch (error) {
+        tentativas++;
+        console.warn(`Tentativa ${tentativas} falhou:`, error);
+        
+        if (tentativas >= maxTentativas) {
+          throw error;
+        }
+        
+        // Aguardar antes de tentar novamente
+        await new Promise(resolve => setTimeout(resolve, 1000 * tentativas));
       }
-    ]);
-
-    const response = await result.response;
-    const text = response.text();
-    
-    // Extrair JSON da resposta
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Não foi possível extrair dados válidos da imagem');
     }
-
-    const dadosExtraidos = JSON.parse(jsonMatch[0]) as PecaExtraida;
-    
-    // Validar dados extraídos
-    if (!dadosExtraidos.nome || typeof dadosExtraidos.preco_custo !== 'number') {
-      throw new Error('Dados extraídos são inválidos');
-    }
-
-    return {
-      nome: dadosExtraidos.nome,
-      preco_custo: Number(dadosExtraidos.preco_custo) || 0,
-      frete: Number(dadosExtraidos.frete) || 0,
-      fornecedor: dadosExtraidos.fornecedor || 'Não identificado'
-    };
 
   } catch (error) {
     console.error('Erro ao analisar imagem:', error);
@@ -91,11 +129,25 @@ export async function analisarImagemPeca(imageFile: File): Promise<PecaExtraida>
 
 export async function analisarNotaFiscalCompleta(imageFile: File): Promise<ResultadoAnalise> {
   try {
+    // Validar imagem antes de processar
+    const validacao = validarImagemPeca(imageFile);
+    if (!validacao.valido) {
+      throw new Error(validacao.erro || 'Imagem inválida');
+    }
+
     // Converter arquivo para base64
     const imageBase64 = await fileToBase64(imageFile);
     
-    // Usar o modelo Gemini 2.5 Flash
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    // Usar o modelo Gemini 2.0 Flash com configurações otimizadas
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash-exp",
+      generationConfig: {
+        temperature: 0.1,
+        topK: 1,
+        topP: 0.8,
+        maxOutputTokens: 2048,
+      },
+    });
     
     const prompt = `
     Analise esta imagem de uma nota fiscal ou comprovante de compra e extraia informações sobre TODOS os produtos/peças listados.

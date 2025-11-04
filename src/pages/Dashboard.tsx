@@ -1,19 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/Loading'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/hooks/useAuth'
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Package, 
-  Calendar,
-  Plus,
-  FileText,
-  BarChart3
-} from 'lucide-react'
+import { Package, DollarSign, TrendingUp, Calendar, Plus, FileText, BarChart3 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface DashboardStats {
@@ -23,6 +16,7 @@ interface DashboardStats {
   servicosEsteMes: number
 }
 
+// Componente que decide qual dashboard usar
 export function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -38,7 +32,6 @@ export function Dashboard() {
     try {
       setLoading(true)
 
-      // Get all services for the user
       const { data: servicos, error } = await supabase
         .from('servicos')
         .select('*')
@@ -46,12 +39,10 @@ export function Dashboard() {
 
       if (error) throw error
 
-      // Calculate stats
       const totalServicos = servicos?.length || 0
       const receitaTotal = servicos?.reduce((sum, servico) => sum + servico.valor_total, 0) || 0
       const lucroTotal = servicos?.reduce((sum, servico) => sum + servico.lucro, 0) || 0
 
-      // Services this month
       const currentMonth = new Date().getMonth()
       const currentYear = new Date().getFullYear()
       const servicosEsteMes = servicos?.filter(servico => {

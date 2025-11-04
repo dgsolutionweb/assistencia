@@ -102,11 +102,9 @@ export function NovoServico() {
       const peca = pecas.find(p => p.id === pecaId)
       if (peca) {
         setValue('custo_peca', peca.preco_custo + peca.frete)
-        setValue('peca_id', pecaId)
       }
     } else {
       setValue('custo_peca', 0)
-      setValue('peca_id', '')
     }
   }
 

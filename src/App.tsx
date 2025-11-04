@@ -21,6 +21,8 @@ function App() {
     return <Loading />
   }
 
+  const AppLayout = Layout
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
@@ -33,9 +35,9 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <Dashboard />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />
@@ -43,9 +45,9 @@ function App() {
             path="/servicos"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <Servicos />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />
@@ -53,9 +55,9 @@ function App() {
             path="/servicos/novo"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <NovoServico />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />
@@ -63,9 +65,9 @@ function App() {
             path="/servicos/editar/:id"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <EditarServico />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />
@@ -73,9 +75,9 @@ function App() {
             path="/pecas"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <Pecas />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />
@@ -83,9 +85,9 @@ function App() {
             path="/pecas/nova"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <NovaPeca />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />
@@ -93,9 +95,9 @@ function App() {
             path="/relatorios"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <Relatorios />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />
@@ -103,9 +105,9 @@ function App() {
             path="/perfil"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <Perfil />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />

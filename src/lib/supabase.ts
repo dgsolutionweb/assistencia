@@ -16,18 +16,27 @@ export interface Servico {
   valor_total: number
   custo_peca: number
   lucro: number
+  status: 'concluido' | 'pendente' | 'cancelado'
   peca_id?: string | null
   pecas_ids?: string | null // JSON string com array de peças
   observacoes?: string
   created_at: string
   updated_at: string
   usuario_id: string
+  tecnico?: string
+  marca?: string
+  modelo?: string
+  cliente?: string
+  descricao_problema?: string
 }
 
 export interface Peca {
   id: string
   nome: string
   preco_custo: number
+  preco_venda: number
+  codigo?: string
+  categoria?: string
   frete: number
   fornecedor?: string
   imagem_url?: string
@@ -60,6 +69,12 @@ export interface Database {
           nome_aparelho: string
           valor_total: number
           custo_peca: number
+          status: 'concluido' | 'pendente' | 'cancelado'
+        tecnico?: string
+        marca?: string
+        modelo?: string
+        cliente?: string
+        descricao_problema?: string
           peca_id: string | null
           pecas_ids: string | null
           observacoes: string | null
@@ -72,6 +87,7 @@ export interface Database {
           nome_aparelho: string
           valor_total: number
           custo_peca: number
+          status: 'concluido' | 'pendente' | 'cancelado'
           peca_id?: string | null
           pecas_ids?: string | null
           observacoes?: string | null
@@ -84,6 +100,7 @@ export interface Database {
           nome_aparelho?: string
           valor_total?: number
           custo_peca?: number
+          status?: 'concluido' | 'pendente' | 'cancelado'
           peca_id?: string | null
           pecas_ids?: string | null
           observacoes?: string | null
