@@ -113,6 +113,38 @@ export interface Database {
         Insert: Omit<Peca, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Peca, 'id' | 'created_at' | 'updated_at'>>
       }
+      servico_pecas: {
+        Row: {
+          id: string
+          servico_id: string
+          peca_id: string
+          quantidade: number
+          custo: number
+          frete: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          servico_id: string
+          peca_id: string
+          quantidade?: number
+          custo?: number
+          frete?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          servico_id?: string
+          peca_id?: string
+          quantidade?: number
+          custo?: number
+          frete?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

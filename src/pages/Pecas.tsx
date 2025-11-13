@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +19,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useVoiceSearch } from "../hooks/useVoiceSearch";
 import { VoiceSearchButton } from "../components/mobile/VoiceSearchButton";
 import HapticService from "../lib/haptic";
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 
 // Types for component props
 interface PecasProps {
@@ -32,6 +33,9 @@ interface PecasProps {
   deletarPeca: (id: string) => void;
   pecasFiltradas: Peca[];
   carregarPecas: () => Promise<void>;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => Promise<void>;
 }
 
 // Mobile Parts Component with proper memoization
@@ -45,7 +49,10 @@ const MobilePecas = React.memo<PecasProps>(({
   toggleAtivoPeca, 
   deletarPeca, 
   pecasFiltradas,
-  carregarPecas
+  carregarPecas,
+  hasMore,
+  isLoadingMore,
+  onLoadMore
 }) => {
   // Barcode scanner hook
   const { isOpen: isScannerOpen, openScanner, closeScanner } = useBarcodeScanner();
@@ -91,19 +98,17 @@ const MobilePecas = React.memo<PecasProps>(({
 
   // Infinite scroll configuration - memoized
   const infiniteScrollConfig = useMemo(() => ({
-    hasMore: false,
-    isLoading: loading,
-    onLoadMore: async () => {
-      // Future: implement pagination
-    },
-    enabled: false
-  }), [loading]);
+    hasMore: hasMore ?? false,
+    isLoading: isLoadingMore ?? false,
+    onLoadMore: onLoadMore ?? (async () => {}),
+    enabled: true
+  }), [hasMore, isLoadingMore, onLoadMore]);
 
   // Infinite scroll hook
   const {
     containerRef: scrollContainerRef,
     sentinelRef,
-    isFetching: isLoadingMore
+    isFetching: scrollIsLoadingMore
   } = useInfiniteScroll(infiniteScrollConfig);
 
   // Barcode scan handler - properly memoized
@@ -419,8 +424,8 @@ const MobilePecas = React.memo<PecasProps>(({
 
         {/* Infinite Scroll Loader */}
         <InfiniteScrollLoader
-          isLoading={isLoadingMore}
-          hasMore={false}
+          isLoading={isLoadingMore ?? false}
+          hasMore={hasMore ?? false}
           error={null}
         />
 
@@ -702,8 +707,7 @@ const DesktopPecas = React.memo<Omit<PecasProps, 'carregarPecas'>>(({
 // Main Pecas component with optimized state management
 export default function Pecas() {
   const { user } = useAuth();
-  const [pecas, setPecas] = useState<Peca[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [showInactive, setShowInactive] = useState(false);
 
@@ -719,36 +723,54 @@ export default function Pecas() {
     setShowInactive(show);
   }, []);
 
-  const carregarPecas = useCallback(async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
+  const pageSize = 20;
+  const {
+    data: pages,
+    isLoading: loading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery<Peca[], number>({
+    queryKey: ['pecas', user?.id, showInactive, searchTerm],
+    enabled: !!user,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage) return undefined;
+      if (lastPage.length < pageSize) return undefined;
+      return allPages.length;
+    },
+    queryFn: async ({ pageParam = 0 }) => {
+      const offset = Number(pageParam) * pageSize;
+      let query = supabase
         .from('pecas')
         .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + pageSize - 1);
 
+      if (!showInactive) query = query.eq('ativo', true);
+      if (searchTerm) {
+        const term = `%${searchTerm}%`;
+        query = query.or(`nome.ilike.${term},fornecedor.ilike.${term}`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      setPecas(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar peças:', error);
-      toast.error('Erro ao carregar peças');
-    } finally {
-      setLoading(false);
+      return data || [];
     }
-  }, [user]);
+  });
+
+  const pecas = useMemo(() => (pages?.pages || []).flat(), [pages]);
+
+  const carregarPecas = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const toggleAtivoPeca = useCallback(async (id: string, ativo: boolean) => {
     try {
       HapticService.trigger('light');
       
-      // Optimistic update
-      setPecas(prevPecas => prevPecas.map(peca => 
-        peca.id === id ? { ...peca, ativo: !ativo } : peca
-      ));
-
       if (navigator.onLine) {
         const { error } = await supabase
           .from('pecas')
@@ -756,22 +778,17 @@ export default function Pecas() {
           .eq('id', id);
 
         if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['pecas', user?.id] });
       } else {
-        // Store action for later sync
-
         toast.info('Ação salva para sincronização');
       }
 
       toast.success(ativo ? 'Peça desativada' : 'Peça ativada');
     } catch (error) {
-      // Revert optimistic update on error
-      setPecas(prevPecas => prevPecas.map(peca => 
-        peca.id === id ? { ...peca, ativo } : peca
-      ));
       console.error('Erro ao alterar status da peça:', error);
       toast.error('Erro ao alterar status da peça');
     }
-  }, []);
+  }, [queryClient, user]);
 
   const deletarPeca = useCallback(async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta peça?')) return;
@@ -779,15 +796,6 @@ export default function Pecas() {
     try {
       HapticService.trigger('medium');
       
-      // Store the part for potential rollback
-      let pecaToDelete: Peca | undefined;
-      
-      // Optimistic update
-      setPecas(prevPecas => {
-        pecaToDelete = prevPecas.find(peca => peca.id === id);
-        return prevPecas.filter(peca => peca.id !== id);
-      });
-
       if (navigator.onLine) {
         const { error } = await supabase
           .from('pecas')
@@ -795,6 +803,7 @@ export default function Pecas() {
           .eq('id', id);
 
         if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['pecas', user?.id] });
       } else {
         // Store action for later sync
 
@@ -803,12 +812,10 @@ export default function Pecas() {
 
       toast.success('Peça excluída com sucesso');
     } catch (error) {
-      // Revert optimistic update on error - restore the deleted part
-
       console.error('Erro ao excluir peça:', error);
       toast.error('Erro ao excluir peça');
     }
-  }, []);
+  }, [queryClient, user]);
 
   // Memoized filtered parts
   const pecasFiltradas = useMemo(() => {
@@ -824,12 +831,7 @@ export default function Pecas() {
     });
   }, [pecas, searchTerm, showInactive]);
 
-  // Load parts on mount and user change
-  useEffect(() => {
-    if (user) {
-      carregarPecas();
-    }
-  }, [user, carregarPecas]);
+  
 
   // Memoized props for components
   const commonProps = useMemo(() => ({
@@ -841,7 +843,10 @@ export default function Pecas() {
     setShowInactive: handleShowInactiveChange,
     toggleAtivoPeca,
     deletarPeca,
-    pecasFiltradas
+    pecasFiltradas,
+    hasMore: !!hasNextPage,
+    isLoadingMore: isFetchingNextPage,
+    onLoadMore: async () => { if (hasNextPage) await fetchNextPage(); }
   }), [
     pecas,
     loading,
@@ -851,7 +856,10 @@ export default function Pecas() {
     handleShowInactiveChange,
     toggleAtivoPeca,
     deletarPeca,
-    pecasFiltradas
+    pecasFiltradas,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage
   ]);
 
   const mobileProps = useMemo(() => ({

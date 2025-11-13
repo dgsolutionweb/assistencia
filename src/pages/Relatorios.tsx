@@ -646,16 +646,25 @@ export function Relatorios() {
     try {
       setLoading(true)
       
-      // Buscar serviços
-      const { data: servicosData, error: servicosError } = await supabase
+      // Buscar serviços (detalhamento)
+      let query = supabase
         .from('servicos')
         .select('*')
         .eq('usuario_id', user.id)
         .order('created_at', { ascending: false })
 
+      if (filtroInicio && filtroFim) {
+        const inicioIso = new Date(filtroInicio + 'T00:00:00Z').toISOString()
+        const fimIso = new Date(filtroFim + 'T23:59:59Z').toISOString()
+        query = query.gte('created_at', inicioIso).lte('created_at', fimIso)
+      }
+
+      const { data: servicosData, error: servicosError } = await query
+
       if (servicosError) throw servicosError
 
       setServicos(servicosData || [])
+      await calcularResumo()
     } catch (error) {
       console.error('Error loading services:', error)
       toast.error('Erro ao carregar serviços')
@@ -675,62 +684,83 @@ export function Relatorios() {
     if (!user) return
 
     try {
-      let servicosFiltrados = servicos
+      const params: { p_uid: string, p_inicio: string | null, p_fim: string | null } = {
+        p_uid: user.id,
+        p_inicio: filtroInicio ? new Date(filtroInicio + 'T00:00:00Z').toISOString() : null,
+        p_fim: filtroFim ? new Date(filtroFim + 'T23:59:59Z').toISOString() : null
+      }
 
-      // Aplicar filtro de data se especificado
-      if (filtroInicio && filtroFim) {
-        const inicio = parseISO(filtroInicio)
-        const fim = parseISO(filtroFim)
-        
-        servicosFiltrados = servicos.filter(servico => {
-          const dataServico = parseISO(servico.created_at)
-          return isWithinInterval(dataServico, { start: inicio, end: fim })
+      const { data, error } = await supabase.rpc('relatorio_resumo', params)
+      if (error) throw error
+
+      const r = (Array.isArray(data) ? data[0] : data) as any
+      if (r) {
+        setResumo({
+          totalServicos: Number(r.total_servicos || 0),
+          receitaTotal: Number(r.receita_total || 0),
+          lucroTotal: Number(r.lucro_total || 0),
+          ticketMedio: Number(r.ticket_medio || 0),
+          margemLucro: Number(r.margem_lucro || 0),
+          totalPecas: Number(r.total_pecas || 0),
+          servicosEsteMes: Number(r.servicos_este_mes || 0),
+          servicosPorStatus: {
+            concluido: Number(r.concluidos || 0),
+            pendente: Number(r.pendentes || 0),
+            cancelado: Number(r.cancelados || 0)
+          }
         })
       }
-
-      // Buscar total de peças
-      const { data: pecasData, error: pecasError } = await supabase
-        .from('pecas')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('ativo', true)
-
-      if (pecasError) throw pecasError
-
-      // Calcular serviços deste mês
-      const inicioMes = startOfMonth(new Date())
-      const fimMes = endOfMonth(new Date())
-      const servicosEsteMes = servicos.filter(servico => {
-        const dataServico = parseISO(servico.created_at)
-        return isWithinInterval(dataServico, { start: inicioMes, end: fimMes })
-      }).length
-
-      // Calcular estatísticas
-      const totalServicos = servicosFiltrados.length
-      const receitaTotal = servicosFiltrados.reduce((sum, servico) => sum + (servico.valor_total || 0), 0)
-      const lucroTotal = servicosFiltrados.reduce((sum, servico) => sum + (servico.lucro || 0), 0)
-      const ticketMedio = totalServicos > 0 ? receitaTotal / totalServicos : 0
-      const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0
-
-      // Calcular serviços por status
-      const servicosPorStatus = {
-        concluido: servicosFiltrados.filter(s => s.status === 'concluido').length,
-        pendente: servicosFiltrados.filter(s => s.status === 'pendente').length,
-        cancelado: servicosFiltrados.filter(s => s.status === 'cancelado').length
-      }
-
-      setResumo({
-        totalServicos,
-        receitaTotal,
-        lucroTotal,
-        ticketMedio,
-        margemLucro,
-        totalPecas: pecasData?.length || 0,
-        servicosEsteMes,
-        servicosPorStatus
-      })
     } catch (error) {
-      console.error('Erro ao calcular resumo:', error)
+      console.error('Erro ao calcular resumo (RPC):', error)
+      // Fallback: cálculo client-side
+      try {
+        let servicosFiltrados = servicos
+        if (filtroInicio && filtroFim) {
+          const inicio = new Date(filtroInicio + 'T00:00:00Z')
+          const fim = new Date(filtroFim + 'T23:59:59Z')
+          servicosFiltrados = servicos.filter(s => {
+            const d = new Date(s.created_at)
+            return d >= inicio && d <= fim
+          })
+        }
+
+        const totalServicos = servicosFiltrados.length
+        const receitaTotal = servicosFiltrados.reduce((sum, s) => sum + (s.valor_total || 0), 0)
+        const lucroTotal = servicosFiltrados.reduce((sum, s) => sum + (s.lucro || 0), 0)
+        const ticketMedio = totalServicos > 0 ? receitaTotal / totalServicos : 0
+        const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0
+        const inicioMes = startOfMonth(new Date())
+        const fimMes = endOfMonth(new Date())
+        const servicosEsteMes = servicos.filter(s => {
+          const d = new Date(s.created_at)
+          return d >= inicioMes && d <= fimMes
+        }).length
+        const servicosPorStatus = {
+          concluido: servicosFiltrados.filter(s => s.status === 'concluido').length,
+          pendente: servicosFiltrados.filter(s => s.status === 'pendente').length,
+          cancelado: servicosFiltrados.filter(s => s.status === 'cancelado').length
+        }
+        // Buscar total de peças ativas
+        const { data: pecasData } = await supabase
+          .from('pecas')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('ativo', true)
+
+        setResumo({
+          totalServicos,
+          receitaTotal,
+          lucroTotal,
+          ticketMedio,
+          margemLucro,
+          totalPecas: pecasData?.length || 0,
+          servicosEsteMes,
+          servicosPorStatus
+        })
+      } catch (fallbackError) {
+        console.error('Erro no fallback de resumo:', fallbackError)
+        toast.error('Erro ao obter resumo dos relatórios')
+      }
     }
   }
 

@@ -152,17 +152,30 @@ export function NovoServico() {
         custo_peca: usarPecaCadastrada ? custoTotalPecas : data.custo_peca,
         observacoes: data.observacoes || null,
         usuario_id: user.id,
-        // Salvar IDs das peças como JSON se houver peças selecionadas
-        pecas_ids: usarPecaCadastrada && pecasSelecionadas.length > 0 
-          ? JSON.stringify(pecasSelecionadas.map(p => ({ id: p.id, nome: p.nome, custo: p.custo })))
-          : null
+        pecas_ids: null
       }
 
-      const { error } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from('servicos')
         .insert([servicoData])
+        .select('id')
 
-      if (error) throw error
+      if (insertError) throw insertError
+
+      const novoServicoId = inserted?.[0]?.id as string | undefined
+      if (usarPecaCadastrada && pecasSelecionadas.length > 0 && novoServicoId) {
+        const itens = pecasSelecionadas.map(p => ({
+          servico_id: novoServicoId,
+          peca_id: p.id,
+          quantidade: 1,
+          custo: p.custo,
+          frete: 0
+        }))
+        const { error: spError } = await supabase
+          .from('servico_pecas')
+          .insert(itens)
+        if (spError) throw spError
+      }
 
       toast.success('Serviço cadastrado com sucesso!')
       navigate('/servicos')

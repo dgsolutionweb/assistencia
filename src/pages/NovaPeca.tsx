@@ -6,8 +6,35 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { Upload, Loader2, CheckCircle, AlertCircle, Edit2, Trash2, Check, X } from 'lucide-react';
 import { supabase, type Peca } from '../lib/supabase';
-import { analisarImagemPeca, analisarNotaFiscalCompleta, validarImagemPeca, type PecaExtraida, type ResultadoAnalise } from '../lib/gemini';
 import { useAuth } from '../hooks/useAuth';
+type PecaExtraida = {
+  nome: string;
+  preco_custo: number;
+  frete: number;
+  fornecedor?: string;
+  quantidade?: number;
+  valor_unitario?: number;
+  valor_total?: number;
+};
+
+type ResultadoAnalise = {
+  pecas: PecaExtraida[];
+  frete_total: number;
+  fornecedor_geral?: string;
+};
+
+function validarImagemPeca(file: File): { valido: boolean; erro?: string } {
+  const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!tiposPermitidos.includes(file.type)) {
+    return { valido: false, erro: 'Tipo de arquivo não suportado. Use JPG, PNG ou WebP.' };
+  }
+  const tamanhoMaximo = 10 * 1024 * 1024;
+  if (file.size > tamanhoMaximo) {
+    return { valido: false, erro: 'Arquivo muito grande. Máximo 10MB.' };
+  }
+  return { valido: true };
+}
+ 
 
 const pecaSchema = z.object({
   nome: z.string().min(1, 'Nome da peça é obrigatório'),
@@ -69,11 +96,13 @@ export default function NovaPeca() {
     };
     reader.readAsDataURL(file);
 
-    // Analisar imagem com IA
     setIsAnalyzing(true);
     try {
-      // Primeiro tenta análise completa para múltiplas peças
-      const resultadoCompleto = await analisarNotaFiscalCompleta(file);
+      const fd = new FormData();
+      fd.append('image', file);
+      const respCompleto = await fetch('/api/analyze-note', { method: 'POST', body: fd });
+      if (!respCompleto.ok) throw new Error('Falha na análise completa');
+      const resultadoCompleto: ResultadoAnalise = await respCompleto.json();
       
       if (resultadoCompleto.pecas.length > 1) {
         // Múltiplas peças encontradas
@@ -100,9 +129,12 @@ export default function NovaPeca() {
         toast.success('Dados extraídos com sucesso! Verifique e ajuste se necessário.');
       }
     } catch (error) {
-      // Se falhar, tenta análise simples
       try {
-        const resultado = await analisarImagemPeca(file);
+        const fd2 = new FormData();
+        fd2.append('image', file);
+        const respPeca = await fetch('/api/analyze-piece', { method: 'POST', body: fd2 });
+        if (!respPeca.ok) throw new Error('Falha na análise simples');
+        const resultado: PecaExtraida = await respPeca.json();
         setModoMultiplo(false);
         setValue('nome', resultado.nome);
         setValue('preco_custo', resultado.preco_custo);
