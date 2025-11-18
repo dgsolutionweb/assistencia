@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/Loading'
-import { Package, DollarSign, TrendingUp, Calendar, Plus, FileText, BarChart3 } from 'lucide-react'
+import { Package, DollarSign, TrendingUp, Calendar, Plus, FileText, BarChart3, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface DashboardStats {
@@ -14,6 +14,8 @@ interface DashboardStats {
   receitaTotal: number
   lucroTotal: number
   servicosEsteMes: number
+  totalRetiradas: number
+  saldoCaixa: number
 }
 
 // Componente que decide qual dashboard usar
@@ -39,9 +41,18 @@ export function Dashboard() {
 
       if (error) throw error
 
+      const { data: retiradas, error: retiradaError } = await supabase
+        .from('retiradas')
+        .select('*')
+        .eq('usuario_id', user.id)
+
+      if (retiradaError) throw retiradaError
+
       const totalServicos = servicos?.length || 0
       const receitaTotal = servicos?.reduce((sum, servico) => sum + servico.valor_total, 0) || 0
       const lucroTotal = servicos?.reduce((sum, servico) => sum + servico.lucro, 0) || 0
+      const totalRetiradas = retiradas?.reduce((sum, retirada) => sum + retirada.valor, 0) || 0
+      const saldoCaixa = lucroTotal - totalRetiradas
 
       const currentMonth = new Date().getMonth()
       const currentYear = new Date().getFullYear()
@@ -54,7 +65,9 @@ export function Dashboard() {
         totalServicos,
         receitaTotal,
         lucroTotal,
-        servicosEsteMes
+        servicosEsteMes,
+        totalRetiradas,
+        saldoCaixa
       })
     } catch (error) {
       console.error('Error loading dashboard stats:', error)
@@ -88,7 +101,55 @@ export function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              R$ {stats?.receitaTotal.toFixed(2) || '0,00'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              De {stats?.totalServicos || 0} serviços
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Retiradas</CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              R$ {stats?.totalRetiradas.toFixed(2) || '0,00'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Salários, despesas e outros
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Saldo em Caixa</CardTitle>
+            <TrendingUp className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${(stats?.saldoCaixa || 0) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              R$ {stats?.saldoCaixa.toFixed(2) || '0,00'}
+            </div>
+            <p className="text-xs text-blue-800">
+              Receitas - Retiradas
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Secondary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Serviços</CardTitle>
@@ -98,21 +159,6 @@ export function Dashboard() {
             <div className="text-2xl font-bold">{stats?.totalServicos || 0}</div>
             <p className="text-xs text-muted-foreground">
               Serviços realizados
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {stats?.receitaTotal.toFixed(2) || '0,00'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Valor total faturado
             </p>
           </CardContent>
         </Card>

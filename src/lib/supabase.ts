@@ -47,6 +47,19 @@ export interface Peca {
   user_id: string
 }
 
+export interface Retirada {
+  id: string
+  usuario_id: string
+  tipo: 'salario' | 'despesa' | 'fornecedor' | 'outros'
+  valor: number
+  descricao: string
+  beneficiario?: string
+  observacoes?: string
+  data_retirada: string
+  created_at: string
+  updated_at: string
+}
+
 export interface RelatorioResumo {
   lucro_total: number
   total_servicos: number
@@ -144,6 +157,11 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+      }
+      retiradas: {
+        Row: Retirada
+        Insert: Omit<Retirada, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Retirada, 'id' | 'created_at' | 'updated_at'>>
       }
     }
   }

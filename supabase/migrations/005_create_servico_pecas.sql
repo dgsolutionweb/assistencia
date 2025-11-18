@@ -23,28 +23,28 @@ DROP POLICY IF EXISTS "Users can delete servico_pecas" ON public.servico_pecas;
 CREATE POLICY "Users can view servico_pecas" ON public.servico_pecas
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM public.servicos s WHERE s.id = servico_id AND s.usuario_id = auth.uid()
+      SELECT 1 FROM public.servicos s WHERE s.id = servico_id AND s.usuario_id = (select auth.uid())
     )
   );
 
 CREATE POLICY "Users can insert servico_pecas" ON public.servico_pecas
   FOR INSERT WITH CHECK (
     EXISTS (
-      SELECT 1 FROM public.servicos s WHERE s.id = servico_id AND s.usuario_id = auth.uid()
+      SELECT 1 FROM public.servicos s WHERE s.id = servico_id AND s.usuario_id = (select auth.uid())
     )
   );
 
 CREATE POLICY "Users can update servico_pecas" ON public.servico_pecas
   FOR UPDATE USING (
     EXISTS (
-      SELECT 1 FROM public.servicos s WHERE s.id = servico_id AND s.usuario_id = auth.uid()
+      SELECT 1 FROM public.servicos s WHERE s.id = servico_id AND s.usuario_id = (select auth.uid())
     )
   );
 
 CREATE POLICY "Users can delete servico_pecas" ON public.servico_pecas
   FOR DELETE USING (
     EXISTS (
-      SELECT 1 FROM public.servicos s WHERE s.id = servico_id AND s.usuario_id = auth.uid()
+      SELECT 1 FROM public.servicos s WHERE s.id = servico_id AND s.usuario_id = (select auth.uid())
     )
   );
 

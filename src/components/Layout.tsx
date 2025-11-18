@@ -9,7 +9,8 @@ import {
   LogOut,
   Menu,
   X,
-  Package
+  Package,
+  Wallet
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Novo Serviço', href: '/servicos/novo', icon: Plus },
   { name: 'Serviços', href: '/servicos', icon: List },
   { name: 'Peças', href: '/pecas', icon: Package },
+  { name: 'Retiradas', href: '/retiradas', icon: Wallet },
   { name: 'Relatórios', href: '/relatorios', icon: BarChart3 },
   { name: 'Perfil', href: '/perfil', icon: User },
 ]
@@ -165,7 +167,7 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Page content */}
         <main className="py-6">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>

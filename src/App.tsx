@@ -9,6 +9,8 @@ import { Servicos } from '@/pages/Servicos'
 import { EditarServico } from '@/pages/EditarServico'
 import Pecas from '@/pages/Pecas'
 import NovaPeca from '@/pages/NovaPeca'
+import { Retiradas } from '@/pages/Retiradas'
+import { NovaRetirada } from '@/pages/NovaRetirada'
 import { Relatorios } from '@/pages/Relatorios'
 import { Perfil } from '@/pages/Perfil'
 import { useAuth } from '@/hooks/useAuth'
@@ -87,6 +89,26 @@ function App() {
               <ProtectedRoute>
                 <AppLayout>
                   <NovaPeca />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/retiradas"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Retiradas />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/retiradas/nova"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <NovaRetirada />
                 </AppLayout>
               </ProtectedRoute>
             }

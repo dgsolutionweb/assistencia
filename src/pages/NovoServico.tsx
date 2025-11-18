@@ -203,7 +203,7 @@ export function NovoServico() {
         </div>
       </div>
 
-      <div className="max-w-2xl">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <Card>
           <CardHeader>
             <CardTitle>Informações do Serviço</CardTitle>
